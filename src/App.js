@@ -1,53 +1,87 @@
+import { DataGrid, SelectBox, Button } from "devextreme-react";
 import "devextreme/dist/css/dx.dark.css";
 import "./App.css";
-import Button from "devextreme-react/button";
-import TextBox from "devextreme-react/text-box";
-import { useCallback, useState, useRef } from "react";
+import { locales, payments, dictionary } from "./data";
+import deMessages from "devextreme/localization/messages/de.json";
+import ruMessages from "devextreme/localization/messages/ru.json";
 
-let textValue = "";
+import { loadMessages, locale, formatMessage } from "devextreme/localization";
+import { Column, Editing, FilterRow } from "devextreme-react/data-grid";
+import { useState } from "react";
+
+const getLocale = () => {
+  const storageLocale = sessionStorage.getItem("locale");
+  return storageLocale != null ? storageLocale : "en";
+};
 
 function App() {
-  const [content, setContent] = useState(false);
-  const [value, setValue] = useState("");
-  const inputRef = useRef(null);
+  const [localeState, setLocaleState] = useState(getLocale);
 
-  const handleValueChanged = useCallback((v) => {
-    setValue(v.value);
-  }, []);
+  const selectBoxInputAttr = { id: "selectInput" };
 
-  const onClick = () => {
-    textValue = value;
-    setContent(!content);
+  const setLocale = (savingLocale) => {
+    sessionStorage.setItem("locale", savingLocale);
+  };
+
+  const changeLocale = (data) => {
+    setLocaleState(data.value);
+    setLocale(data.value);
+    document.location.reload();
+  };
+
+  const initMessages = () => {
+    loadMessages(deMessages);
+    loadMessages(ruMessages);
+    loadMessages(dictionary);
+  };
+
+  initMessages();
+
+  locale(localeState);
+
+  const editPopupOptions = {
+    width: 700,
+    height: 345,
   };
 
   return (
     <div className="App">
-      <Button text="Click me!" type="success" onClick={onClick} />
-      <TextBox
-        className="textbox"
-        value={value}
-        onValueChanged={handleValueChanged}
-        label="Link"
-        labelMode="floating"
-      />
-      <TextBox
-        className="textbox"
-        ref={inputRef}
-        defaultValue=""
-        label="Link"
-        labelMode="floating"
-      />
-      {content && <TextBoxesContent inputRef={inputRef} value={textValue} />}
-    </div>
-  );
-}
-
-function TextBoxesContent(props) {
-  const { value, inputRef } = props;
-  return (
-    <div className="text-boxes-value">
-      <p>{value}</p>
-      <p>{inputRef.current.instance.option("value")}</p>
+      <DataGrid
+        dataSource={payments}
+        columnAutoWidth={true}
+        keyExpr="PaymentId"
+      >
+        <Column
+          dataField="PaymentId"
+          caption={formatMessage("Number")}
+          allowEditing={false}
+        />
+        <Column dataField="ContactName" caption={formatMessage("Contact")} />
+        <Column dataField="CompanyName" caption={formatMessage("Company")} />
+        <Column dataField="Amount" caption={formatMessage("Amount")} />
+        <Column
+          dataField="PaymentDate"
+          caption={formatMessage("PaymentDate")}
+        />
+        <FilterRow visible={true} applyFilter="auto" />
+        <Editing mode="popup" allowUpdating={true} popup={editPopupOptions} />
+      </DataGrid>
+      <Button type="success" text={formatMessage("BtnText")} />
+      <div className="options">
+        <div className="caption">Options</div>
+        <div className="option">
+          <label htmlFor="selectInput">Language</label>
+          &nbsp;
+          <SelectBox
+            items={locales}
+            valueExpr="value"
+            displayExpr="name"
+            value={localeState}
+            onValueChanged={changeLocale}
+            inputAttr={selectBoxInputAttr}
+          />
+        </div>
+      </div>
     </div>
   );
 }
